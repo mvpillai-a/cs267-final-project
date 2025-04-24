@@ -1,15 +1,21 @@
 # For CS267 Final Project:
 Clone repo
+
 cd into data and follow quickstart instruction to get sift tar and run code as mentioned
+
 For small dataset test - go to data, `small.py` constructs dataset (adjust to desired size - currently 10pts with dim 2) and run if needed
+
 10pt dataset already added to data
+
 Run 10pt dataset with `./neighbors -R 2 -L 4 -alpha 1.2 -two_pass 0 \  -graph_outfile ../../data/data_10pts_graph \  -data_type float \  -dist_func Euclidian \  -base_path ../../data/data_10pts_2D.fbin`
+
 For visualizing graph: load graphviz on perlmutter with 
 ```module load conda
 conda create -n graphviz_env python=3.11 -y
 conda activate graphviz_env
 conda install -c conda-forge graphviz python-graphviz
 ```
+
 Then run `visualize_graph.py`
 
 # ParlayANN
