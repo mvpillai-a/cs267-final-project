@@ -46,6 +46,20 @@ using namespace parlayANN;
 
 using uint = unsigned int;
 
+template <typename indexType>
+void exportToDOT(Graph<indexType> &G, const std::string &filename) {
+    std::ofstream out(filename);
+    out << "graph G {\n";
+    for (indexType i = 0; i < G.size(); ++i) {
+        for (auto neighbor : G[i]) {
+            if (i < neighbor) {
+                out << "  " << i << " -- " << neighbor << ";\n";
+            }
+        }
+    }
+    out << "}\n";
+    out.close();
+}
 
 template<typename Point, typename PointRange, typename indexType>
 void timeNeighbors(Graph<indexType> &G,
@@ -66,7 +80,7 @@ void timeNeighbors(Graph<indexType> &G,
       G.save(outFile);
     }
 
-
+    exportToDOT(G, "output_graph.dot");
 }
 
 int main(int argc, char* argv[]) {
