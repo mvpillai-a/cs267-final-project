@@ -84,12 +84,20 @@ void timeNeighbors(Graph<indexType> &G,
 }
 
 int main(int argc, char* argv[]) {
+    // commandLine P(argc,argv,
+    // "[-a <alpha>] [-d <delta>] [-R <deg>]"
+    //     "[-L <bm>] [-k <k> ]  [-gt_path <g>] [-query_path <qF>]"
+    //     "[-graph_path <gF>] [-graph_outfile <oF>] [-res_path <rF>]" "[-num_passes <np>]"
+    //     "[-memory_flag <algoOpt>] [-mst_deg <q>] [-num_clusters <nc>] [-cluster_size <cs>]"
+    //     "[-data_type <tp>] [-dist_func <df>] [-base_path <b>] <inFile>");
+
     commandLine P(argc,argv,
-    "[-a <alpha>] [-d <delta>] [-R <deg>]"
-        "[-L <bm>] [-k <k> ]  [-gt_path <g>] [-query_path <qF>]"
-        "[-graph_path <gF>] [-graph_outfile <oF>] [-res_path <rF>]" "[-num_passes <np>]"
-        "[-memory_flag <algoOpt>] [-mst_deg <q>] [-num_clusters <nc>] [-cluster_size <cs>]"
-        "[-data_type <tp>] [-dist_func <df>] [-base_path <b>] <inFile>");
+      "[-a <alpha>] [-d <delta>] [-R <deg>]"
+          "[-L <bm>] [-k <k> ]  [-gt_path <g>] [-query_path <qF>]"
+          "[-graph_path <gF>] [-graph_outfile <oF>] [-res_path <rF>]" "[-num_passes <np>]"
+          "[-memory_flag <algoOpt>] [-mst_deg <q>] [-num_clusters <nc>] [-cluster_size <cs>]"
+          "[-data_type <tp>] [-dist_func <df>] [-base_path <b>] "
+          "[-use_cuda] [-cuda_block_size <block_size>] <inFile>");
 
   char* iFile = P.getOptionValue("-base_path");
   char* oFile = P.getOptionValue("-graph_outfile");
@@ -130,6 +138,10 @@ int main(int argc, char* argv[]) {
   int rerank_factor = P.getOptionIntValue("-rerank_factor", 100);
   bool range = P.getOption("-range");
 
+  // CUDA-specific parameters
+  bool use_cuda = P.getOption("-use_cuda");
+  int cuda_block_size = P.getOptionIntValue("-cuda_block_size", 256);
+
   // this integer represents the number of random edges to start with for
   // inserting in a single batch per round
   int single_batch = P.getOptionIntValue("-single_batch", 0);
@@ -139,6 +151,13 @@ int main(int argc, char* argv[]) {
 
   BuildParams BP = BuildParams(R, L, alpha, num_passes, num_clusters, cluster_size, MST_deg, delta, verbose, quantize_build, radius, radius_2, self, range, single_batch, Q, trim, rerank_factor);
   long maxDeg = BP.max_degree();
+
+  // Add CUDA-specific parameters to BuildParams
+  BP.use_cuda = use_cuda;
+  BP.cuda_block_size = cuda_block_size;
+  if (use_cuda) {
+      std::cout << "Using CUDA with block size: " << cuda_block_size << std::endl;
+  }
 
   if((tp != "uint8") && (tp != "int8") && (tp != "float")){
     std::cout << "Error: vector type not specified correctly, specify int8, uint8, or float" << std::endl;
