@@ -18,7 +18,7 @@ def show_image(png_file: str):
 
 if __name__ == "__main__":
     dot_file = "output_graph.dot"
-    png_file = "output_graph.png"
+    png_file = "output_graph_cuda.png"
     
     if not os.path.exists(dot_file):
         print(f"{dot_file} not found. Run your C++ code first to generate it.")
