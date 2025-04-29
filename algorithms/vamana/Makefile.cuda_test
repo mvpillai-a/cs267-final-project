@@ -1,0 +1,16 @@
+NVCC = nvcc
+CUDA_HOME ?= $(CUDA_ROOT)
+CUDA_INCLUDE = -I$(CUDA_HOME)/include
+CUDA_LIBS = -L$(CUDA_HOME)/lib64 -lcudart -lcuda
+CUDA_ARCH = -arch=sm_80
+CUDA_FLAGS = $(CUDA_ARCH) --std=c++17 -O3
+
+# Include directories
+INCLUDE = -I. $(CUDA_INCLUDE)
+
+# Just compile the test program directly
+test_cuda_euclidean: cuda_euclidean_kernel.cu test_cuda_euclidean.cu
+	$(NVCC) $(CUDA_FLAGS) $(INCLUDE) -o $@ $^ $(CUDA_LIBS)
+
+clean:
+	rm -f test_cuda_euclidean

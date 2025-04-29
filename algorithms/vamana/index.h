@@ -36,6 +36,7 @@
 #include "parlay/delayed.h"
 #include "parlay/random.h"
 #include "../utils/beamSearch.h"
+#include "../utils/beam_search_wrapper.h"
 
 namespace parlayANN {
 
@@ -248,15 +249,18 @@ struct knn_index {
         size_t index = shuffled_inserts[i];
         int sp = BP.single_batch ? i : start_point;
         QueryParams QP((long) 0, BP.L, (double) 0.0, (long) Points.size(), (long) G.max_degree());
-        auto [visited, bs_distance_comps] =
-          //beam_search<Point, PointRange, indexType>(Points[index], G, Points, sp, QP);
-          beam_search_rerank__<Point, QPoint, PR, QPR, indexType>(Points[index],
-                                                                 QPoints[index],
-                                                                 G,
-                                                                 Points,
-                                                                 QPoints,
-                                                                 sp,
-                                                                 QP);
+        // auto [visited, bs_distance_comps] =
+        //   //beam_search<Point, PointRange, indexType>(Points[index], G, Points, sp, QP);
+        //   beam_search_rerank__<Point, QPoint, PR, QPR, indexType>(Points[index],
+        //                                                          QPoints[index],
+        //                                                          G,
+        //                                                          Points,
+        //                                                          QPoints,
+        //                                                          sp,
+        //                                                          QP);
+
+        auto [visited, bs_distance_comps] = beam_search_wrapper<Point, PointRange, indexType>(Points[index], G, Points, sp, QP);
+
         BuildStats.increment_dist(index, bs_distance_comps);
         BuildStats.increment_visited(index, visited.size());
 

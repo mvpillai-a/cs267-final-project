@@ -40,7 +40,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "../vamana/cuda_euclidean_kernel.h" 
+
 namespace parlayANN {
+
+static bool use_cuda_for_distance = false;
+
+// Function to enable/disable CUDA
+inline void set_cuda_for_distance(bool enable) {
+    use_cuda_for_distance = enable;
+}
 
 float euclidian_distance_(const uint8_t *p, const uint8_t *q, unsigned d) {
   int result = 0;
@@ -112,8 +121,39 @@ struct Euclidian_Point {
   static bool is_metric() {return true;}
   T operator[](long i) const {return *(values + i);}
 
+  // float distance(const Euclidian_Point& x) const {
+  //   return euclidian_distance(this->values, x.values, params.dims);
+  // }
+  // This would go in euclidian_point.h where the distance function is defined
   float distance(const Euclidian_Point& x) const {
-    return euclidian_distance(this->values, x.values, params.dims);
+    if (use_cuda_for_distance) {
+        // Use your CUDA implementation
+        std::vector<int> candidate = {0};
+        std::vector<float> result(1);
+        
+        // Create a temporary array for CUDA implementation
+        T* temp_points = new T[params.dims];
+        for (int i = 0; i < params.dims; i++) {
+            temp_points[i] = x.values[i];
+        }
+        
+        // Call your existing CUDA function
+        computeEuclideanDistances<T>(
+            this->values,       // Query point
+            temp_points,        // Points array
+            candidate.data(),   // Candidate index
+            1,                  // Number of candidates
+            params.dims,        // Dimensionality
+            result.data()       // Output distance
+        );
+        
+        // Clean up
+        delete[] temp_points;
+        return result[0];
+    } else {
+        // Original CPU implementation
+        return euclidian_distance(this->values, x.values, params.dims);
+    }
   }
 
   void normalize() {
