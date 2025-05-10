@@ -1,10 +1,12 @@
 #pragma once
 
-#include "cuda_beam_search.h"
 #include "beamSearch.h"
+#include "graph.h"
+#include "types.h"
 
 namespace parlayANN {
 
+// Wrapper function for beam search that can decide whether to use CPU or GPU
 template<typename Point, typename PointRange, typename indexType>
 std::pair<parlay::sequence<indexType>, long> beam_search_wrapper(
     const Point &query,
@@ -13,19 +15,20 @@ std::pair<parlay::sequence<indexType>, long> beam_search_wrapper(
     indexType starting_point,
     const QueryParams &QP) {
     
-    // Call the regular beam search - it will now use CUDA internally when the flag is set
+    // Call the regular beam search - the distance function internally
+    // will use CUDA if the flag is enabled in euclidian_point.h
     parlay::sequence<indexType> starting_points = {starting_point};
-    auto [pairElts, dist_cmps] = beam_search(query, G, Points, starting_points, QP);
+    auto [result, dist_cmps] = beam_search(query, G, Points, starting_points, QP);
     
-    // Extract just the point IDs from the beam search results for visited points
-    parlay::sequence<indexType> visited_indices;
-    visited_indices.reserve(pairElts.second.size());
+    // Extract just the visited points for the robustPrune function
+    parlay::sequence<indexType> visited_ids;
+    visited_ids.reserve(result.second.size());
     
-    for (const auto &p : pairElts.second) {
-        visited_indices.push_back(p.first);
+    for (const auto &p : result.second) {
+        visited_ids.push_back(p.first);
     }
     
-    return std::make_pair(visited_indices, dist_cmps);
+    return std::make_pair(visited_ids, dist_cmps);
 }
 
 } // namespace parlayANN

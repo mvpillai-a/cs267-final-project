@@ -133,6 +133,20 @@ int main(int argc, char* argv[]) {
   // this integer represents the number of random edges to start with for
   // inserting in a single batch per round
   int single_batch = P.getOptionIntValue("-single_batch", 0);
+
+  int use_cuda = P.getOptionIntValue("-cuda", 0); 
+  if (use_cuda && parlayANN::isCudaAvailable()) {
+    printf("CUDA GPU detected, enabling GPU acceleration\n");
+    parlayANN::printCudaDeviceInfo();
+    parlayANN::set_cuda_for_distance(true);
+  } else {
+      if (use_cuda) {
+          printf("CUDA requested but not available, falling back to CPU\n");
+      } else {
+          printf("Using CPU implementation for distance calculations\n");
+      }
+      parlayANN::set_cuda_for_distance(false);
+  }
     
   std::string df = std::string(dfc);
   std::string tp = std::string(vectype);

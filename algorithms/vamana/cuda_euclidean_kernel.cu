@@ -17,6 +17,8 @@
 
 namespace parlayANN {
 
+    
+
 /**
  * CUDA kernel for computing Euclidean distances between a query point and multiple dataset points
  * 
@@ -186,5 +188,15 @@ template void computeEuclideanDistances<signed char>(
     int dims,
     float* distances
 );
+
+template void computeEuclideanDistances<unsigned short>(
+    const unsigned short* query,
+    const unsigned short* points,
+    const int* candidates,
+    int numCandidates,
+    int dims,
+    float* distances
+);
+
 
 } // namespace parlayANN
