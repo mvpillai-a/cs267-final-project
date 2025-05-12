@@ -1,4 +1,4 @@
-// nnd_cuda.cu - Fixed version with proper recall
+// nnd_cuda.cu - Balanced version with smart update filtering
 #include "nnd_cuda.cuh"
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
@@ -26,7 +26,7 @@ __device__ float squared_euclidean_cuda(
     return result;
 }
 
-// Simple but correct heap push operation
+// Simple heap push operation
 __device__ int device_checked_push(
     int* indices,
     float* keys,
@@ -127,7 +127,7 @@ __global__ void init_random_kernel(
     }
 }
 
-// Sample candidates
+// Sample candidates with priority
 __global__ void sample_candidates_kernel(
     const int* indices,
     const char* flags,
@@ -177,9 +177,7 @@ __global__ void collect_reverse_neighbors_kernel(
     const int* indices,
     const char* flags,
     int* reverse_new,
-    int* reverse_old,
     int* reverse_new_counts,
-    int* reverse_old_counts,
     int num_points,
     int n_neighbors,
     int max_candidates
@@ -205,7 +203,7 @@ __global__ void collect_reverse_neighbors_kernel(
     }
 }
 
-// Generate updates - back to original logic
+// Generate updates with smart filtering
 __global__ void generate_updates_kernel(
     const float* data,
     const int* indices,
@@ -223,32 +221,41 @@ __global__ void generate_updates_kernel(
     int n_neighbors,
     int max_candidates,
     int dim,
-    int max_updates_per_point
+    int max_updates_per_point,
+    unsigned int seed
 ) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (i < num_points) {
+        curandState state;
+        curand_init(seed, i, 0, &state);
+        
         int count = 0;
         int update_offset = i * max_updates_per_point;
         
         int new_count = new_counts[i];
         int old_count = old_counts[i];
         
-        // New-new pairs
+        // Get threshold distances for better filtering
+        float threshold_i = keys[i * n_neighbors] * 0.9f;  // 10% improvement threshold
+        
+        // New-new pairs - all pairs but with improvement check
         for (int j = 0; j < new_count; ++j) {
             int idx0 = new_candidates[i * max_candidates + j];
             if (idx0 == NONE) continue;
+            
+            float threshold0 = keys[idx0 * n_neighbors] * 0.9f;
             
             for (int k = j + 1; k < new_count; ++k) {
                 int idx1 = new_candidates[i * max_candidates + k];
                 if (idx1 == NONE) continue;
                 
+                float threshold1 = keys[idx1 * n_neighbors] * 0.9f;
+                
+                // Quick distance check with thresholds
                 float d = squared_euclidean_cuda(data, idx0, idx1, dim);
                 
-                bool improve0 = (idx0 < num_points && d < keys[idx0 * n_neighbors]);
-                bool improve1 = (idx1 < num_points && d < keys[idx1 * n_neighbors]);
-                
-                if ((improve0 || improve1) && count < max_updates_per_point) {
+                if ((d < threshold0 || d < threshold1) && count < max_updates_per_point) {
                     updates[update_offset + count * 2] = idx0;
                     updates[update_offset + count * 2 + 1] = idx1;
                     update_distances[update_offset + count] = d;
@@ -257,21 +264,25 @@ __global__ void generate_updates_kernel(
             }
         }
         
-        // New-old pairs
+        // New-old pairs - sample only promising pairs
         for (int j = 0; j < new_count; ++j) {
             int idx0 = new_candidates[i * max_candidates + j];
             if (idx0 == NONE) continue;
             
+            float threshold0 = keys[idx0 * n_neighbors] * 0.9f;
+            
             for (int k = 0; k < old_count; ++k) {
+                // Random sampling to reduce updates
+                if (curand_uniform(&state) > 0.7f) continue;  // Keep 70% of pairs
+                
                 int idx1 = old_candidates[i * max_candidates + k];
                 if (idx1 == NONE) continue;
                 
+                float threshold1 = keys[idx1 * n_neighbors] * 0.9f;
+                
                 float d = squared_euclidean_cuda(data, idx0, idx1, dim);
                 
-                bool improve0 = (idx0 < num_points && d < keys[idx0 * n_neighbors]);
-                bool improve1 = (idx1 < num_points && d < keys[idx1 * n_neighbors]);
-                
-                if ((improve0 || improve1) && count < max_updates_per_point) {
+                if ((d < threshold0 || d < threshold1) && count < max_updates_per_point) {
                     updates[update_offset + count * 2] = idx0;
                     updates[update_offset + count * 2 + 1] = idx1;
                     update_distances[update_offset + count] = d;
@@ -280,22 +291,26 @@ __global__ void generate_updates_kernel(
             }
         }
         
-        // New reverse pairs
+        // Reverse neighbors - sample carefully
         int reverse_count = reverse_new_counts[i];
         for (int j = 0; j < reverse_count; ++j) {
             int idx0 = reverse_new[i * max_candidates + j];
             if (idx0 == NONE) continue;
             
+            float threshold0 = keys[idx0 * n_neighbors] * 0.9f;
+            
             for (int k = j + 1; k < reverse_count; ++k) {
+                // Random sampling to reduce updates
+                if (curand_uniform(&state) > 0.8f) continue;  // Keep 80% of pairs
+                
                 int idx1 = reverse_new[i * max_candidates + k];
                 if (idx1 == NONE) continue;
                 
+                float threshold1 = keys[idx1 * n_neighbors] * 0.9f;
+                
                 float d = squared_euclidean_cuda(data, idx0, idx1, dim);
                 
-                bool improve0 = (idx0 < num_points && d < keys[idx0 * n_neighbors]);
-                bool improve1 = (idx1 < num_points && d < keys[idx1 * n_neighbors]);
-                
-                if ((improve0 || improve1) && count < max_updates_per_point) {
+                if ((d < threshold0 || d < threshold1) && count < max_updates_per_point) {
                     updates[update_offset + count * 2] = idx0;
                     updates[update_offset + count * 2 + 1] = idx1;
                     update_distances[update_offset + count] = d;
@@ -308,7 +323,7 @@ __global__ void generate_updates_kernel(
     }
 }
 
-// Apply updates and mark as OLD
+// Apply updates
 __global__ void apply_updates_kernel(
     int* indices,
     float* keys,
@@ -316,17 +331,13 @@ __global__ void apply_updates_kernel(
     const int* updates,
     const float* update_distances,
     const int* update_counts,
-    const int* new_candidates,
-    const int* new_counts,
     int num_points,
     int n_neighbors,
-    int max_candidates,
     int max_updates_per_point
 ) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (idx < num_points) {
-        // Apply updates
         for (int i = 0; i < num_points; ++i) {
             int update_offset = i * max_updates_per_point;
             int count = update_counts[i];
@@ -349,7 +360,7 @@ __global__ void apply_updates_kernel(
     }
 }
 
-// Mark sampled as OLD - separate kernel
+// Mark as OLD
 __global__ void mark_old_kernel(
     char* flags,
     const int* indices,
@@ -425,7 +436,8 @@ void nn_descent_cuda(
     cudaMalloc(&d_old_counts, num_points * sizeof(int));
     cudaMalloc(&d_reverse_new_counts, num_points * sizeof(int));
     
-    int max_updates_per_point = max_candidates * max_candidates * 2;
+    // Moderate max updates per point
+    int max_updates_per_point = max_candidates * 10;  // Balanced
     cudaMalloc(&d_updates, num_points * max_updates_per_point * 2 * sizeof(int));
     cudaMalloc(&d_update_distances, num_points * max_updates_per_point * sizeof(float));
     cudaMalloc(&d_update_counts, num_points * sizeof(int));
@@ -469,25 +481,26 @@ void nn_descent_cuda(
         
         // Collect reverse neighbors
         collect_reverse_neighbors_kernel<<<grid_size, block_size>>>(
-            d_indices, d_flags, d_reverse_new, nullptr,
-            d_reverse_new_counts, nullptr,
+            d_indices, d_flags, d_reverse_new,
+            d_reverse_new_counts,
             num_points, n_neighbors, max_candidates
         );
         cudaDeviceSynchronize();
         
-        // Generate updates
+        // Generate updates with smart filtering
         generate_updates_kernel<<<grid_size, block_size>>>(
             d_data, d_indices, d_keys, d_new_candidates, d_old_candidates,
             d_reverse_new, d_new_counts, d_old_counts, d_reverse_new_counts,
             d_updates, d_update_distances, d_update_counts,
-            num_points, n_neighbors, max_candidates, dim, max_updates_per_point
+            num_points, n_neighbors, max_candidates, dim, max_updates_per_point,
+            rng_state[0] + iter
         );
         cudaDeviceSynchronize();
         
         // Apply updates
         apply_updates_kernel<<<grid_size, block_size>>>(
             d_indices, d_keys, d_flags, d_updates, d_update_distances, d_update_counts,
-            d_new_candidates, d_new_counts, num_points, n_neighbors, max_candidates, max_updates_per_point
+            num_points, n_neighbors, max_updates_per_point
         );
         cudaDeviceSynchronize();
         
