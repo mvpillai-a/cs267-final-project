@@ -184,42 +184,42 @@ int main()
     std::cout << std::endl;
     
     // Sample some results to manually verify
-    std::cout << "Sample results comparison (first 5 nodes):" << std::endl;
-    std::cout << "Node\tCPU neighbors\t\t\tCUDA neighbors" << std::endl;
-    for (int i = 0; i < std::min(5, num_points); ++i) {
-        std::cout << i << "\t";
+    // std::cout << "Sample results comparison (first 5 nodes):" << std::endl;
+    // std::cout << "Node\tCPU neighbors\t\t\tCUDA neighbors" << std::endl;
+    // for (int i = 0; i < std::min(5, num_points); ++i) {
+    //     std::cout << i << "\t";
         
-        // CPU neighbors
-        for (int j = 0; j < parms.n_neighbors; ++j) {
-            std::cout << cpu_indices(i, j) << " ";
-        }
-        std::cout << "\t\t";
+    //     // CPU neighbors
+    //     for (int j = 0; j < parms.n_neighbors; ++j) {
+    //         std::cout << cpu_indices(i, j) << " ";
+    //     }
+    //     std::cout << "\t\t";
         
-        // CUDA neighbors
-        for (int j = 0; j < parms.n_neighbors; ++j) {
-            std::cout << cuda_indices(i, j) << " ";
-        }
-        std::cout << std::endl;
-    }
+    //     // CUDA neighbors
+    //     for (int j = 0; j < parms.n_neighbors; ++j) {
+    //         std::cout << cuda_indices(i, j) << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
     
-    // Check distances
-    std::cout << "\nSample distance comparison (first 5 nodes):" << std::endl;
-    std::cout << "Node\tCPU distances\t\t\tCUDA distances" << std::endl;
-    for (int i = 0; i < std::min(5, num_points); ++i) {
-        std::cout << i << "\t";
+    // // Check distances
+    // std::cout << "\nSample distance comparison (first 5 nodes):" << std::endl;
+    // std::cout << "Node\tCPU distances\t\t\tCUDA distances" << std::endl;
+    // for (int i = 0; i < std::min(5, num_points); ++i) {
+    //     std::cout << i << "\t";
         
-        // CPU distances
-        for (int j = 0; j < parms.n_neighbors; ++j) {
-            printf("%.4f ", cpu_nnd.current_graph.keys(i, j));
-        }
-        std::cout << "\t";
+    //     // CPU distances
+    //     for (int j = 0; j < parms.n_neighbors; ++j) {
+    //         printf("%.4f ", cpu_nnd.current_graph.keys(i, j));
+    //     }
+    //     std::cout << "\t";
         
-        // CUDA distances
-        for (int j = 0; j < parms.n_neighbors; ++j) {
-            printf("%.4f ", cuda_graph.keys(i, j));
-        }
-        std::cout << std::endl;
-    }
+    //     // CUDA distances
+    //     for (int j = 0; j < parms.n_neighbors; ++j) {
+    //         printf("%.4f ", cuda_graph.keys(i, j));
+    //     }
+    //     std::cout << std::endl;
+    // }
     
     // Additional performance metrics
     std::cout << "\nDetailed Performance Metrics:" << std::endl;

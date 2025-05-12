@@ -6,8 +6,8 @@ from matplotlib.ticker import ScalarFormatter
 # Sample data from your benchmarks
 # Replace these with your actual benchmark results
 dataset_sizes = [1000, 10000, 100000, 1000000]  # 1K, 10K, 100K, 1M points
-cpu_times = [0.082, 0.765, 7.621, 108.714]  # CPU execution times in seconds
-cuda_times = [0.063, 0.587, 5.792, 33.215]  # CUDA execution times in seconds
+cpu_times = [0.563, 1.336, 7.792, 99.850]  # CPU execution times in seconds
+cuda_times = [0.034, 0.387, 4.658, 73.673]  # CUDA execution times in seconds
 
 # Create a DataFrame for easier manipulation
 df = pd.DataFrame({
