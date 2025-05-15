@@ -82,7 +82,7 @@ int main()
     printCudaInfo();
     
     // Load dataset from file
-    std::ifstream infile("1M_dataset.txt");
+    std::ifstream infile("100k_dataset.txt");
     if (!infile.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return -1;
@@ -100,7 +100,7 @@ int main()
     }
     infile.close();
 
-    int num_points = 1000000;
+    int num_points = 100000;
     
     // Create the data matrix
     Matrix<float> data(num_points, values);
