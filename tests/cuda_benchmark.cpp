@@ -107,15 +107,13 @@ int main()
     
     // Define algorithm parameters
     Parms parms;
-    parms.n_neighbors = 4;
+    parms.n_neighbors = 10;
     parms.metric = "euclidean";
     parms.seed = 42;
     parms.verbose = true;
     parms.tree_init = false;
-    parms.n_iters = 3;  // Set a specific number of iterations for fair comparison
-    parms.max_candidates = 10;  // Set a reasonable value
-    parms.n_iters = 5;         // Increase iterations for better accuracy
-    parms.n_neighbors = 10; 
+    parms.n_iters = 6;  
+    parms.max_candidates = 15;  
     
     std::cout << "Dataset size: " << num_points << " points" << std::endl;
     std::cout << "Dimensions: " << data.ncols() << std::endl;
