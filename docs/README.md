@@ -1,5 +1,11 @@
 # For CS267 Final Project:
 
+## Code Submission:
+
+Code for NN-Descent algorithms are located in branches `nndescent` (CUDA-Heavy) and `new-nndescent` (Distance-Only)
+
+Code for HCNNG algorithm is located in branch `vkHCNNG`. CUDA files are located within folder algorithms > HCNNG > CUDA
+
 ## Visualization:
 
 Clone repo
@@ -20,15 +26,6 @@ conda install -c conda-forge graphviz python-graphviz
 ```
 
 Then run `visualize_graph.py`
-
-## Running with CUDA
-
-Go to vamana folder and use same command but with two additional cuda parameters `-use_cuda` and `-cuda_block_size`:
-
-`./neighbors -R 32 -L 64 -alpha 1.2 two_pass 0 -graph_outfile ../../data/sift/sift_learn_32_64 -data_type float -dist_func Euclidian -base_path ../../data/sift/sift_learn.fbin -use_cuda True -cuda_block_size 64`
-
-You can adjust the block size with the `-cuda_block_size` parameter. I found that 64 works best for now though, giving around 2.7sec.
-
 
 # ParlayANN
 
